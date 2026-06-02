@@ -370,6 +370,49 @@
     align-items: center;
   }
   .ko-vs { color: var(--muted); font-size: 11px; font-weight: 700; }
+
+  /* Generic slot label for unresolved teams */
+  .slot-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 600;
+  }
+  /* Winner highlight on team in match row */
+  .match .team.winner .team-code,
+  .match .team.winner .team-name {
+    color: var(--gold);
+  }
+  .match .team.winner .team-code::after {
+    content: ' ✓';
+    color: var(--gold);
+    font-size: 11px;
+  }
+  /* Final round card — gold themed */
+  .group-card.final-round {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
+  }
+  .group-card.final-round .group-header {
+    background: linear-gradient(135deg, var(--panel2) 0%, rgba(255,215,0,0.15) 100%);
+    color: var(--gold);
+  }
+  .group-card.final-round .group-letter {
+    background: var(--gold);
+    color: var(--bg);
+  }
+  /* Champion banner standalone */
+  .champion-standalone {
+    margin: 12px 0 0;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--gold) 0%, #FFA500 100%);
+    color: var(--bg);
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-align: center;
+  }
   .winner-indicator {
     display: inline-block;
     width: 0;
@@ -750,7 +793,7 @@ const KO = [
 
 // Default predictions (Claude's baseline picks)
 const DEFAULT_SCORES = {"0": [2, 0], "1": [1, 1], "2": [2, 1], "3": [2, 0], "4": [1, 1], "5": [0, 2], "6": [2, 1], "7": [0, 2], "8": [4, 0], "9": [2, 1], "10": [0, 1], "11": [0, 1], "12": [3, 0], "13": [2, 0], "14": [0, 1], "15": [1, 0], "16": [1, 0], "17": [2, 1], "18": [0, 2], "19": [3, 0], "20": [2, 0], "21": [2, 1], "22": [1, 0], "23": [0, 2], "24": [0, 1], "25": [1, 1], "26": [3, 0], "27": [2, 1], "28": [2, 0], "29": [2, 1], "30": [0, 1], "31": [4, 0], "32": [0, 3], "33": [1, 1], "34": [2, 0], "35": [3, 0], "36": [2, 0], "37": [1, 1], "38": [1, 1], "39": [1, 2], "40": [2, 0], "41": [2, 0], "42": [1, 1], "43": [0, 2], "44": [1, 1], "45": [2, 0], "46": [1, 2], "47": [2, 0], "48": [2, 0], "49": [2, 1], "50": [2, 0], "51": [3, 0], "52": [2, 0], "53": [2, 0], "54": [1, 2], "55": [1, 1], "56": [0, 2], "57": [2, 1], "58": [1, 1], "59": [2, 1], "60": [2, 2], "61": [2, 0], "62": [0, 2], "63": [1, 1], "64": [0, 2], "65": [2, 1], "66": [0, 1], "67": [2, 0], "68": [1, 1], "69": [1, 0], "70": [3, 0], "71": [1, 1]};
-const DEFAULT_KO = {"73": [1, 0], "74": [3, 0], "75": [2, 1], "76": [3, 1], "77": [3, 0], "78": [2, 1], "79": [3, 1], "80": [3, 0], "81": [2, 1], "82": [2, 0], "83": [2, 1], "84": [3, 0], "85": [2, 0], "86": [2, 1], "87": [2, 0], "88": [1, 2], "89": [0, 3], "90": [1, 2], "91": [0, 2], "92": [1, 2], "93": [1, 2], "94": [1, 2], "95": [0, 2], "96": [2, 0], "97": [1, 2], "98": [2, 1], "99": [1, 2], "100": [2, 0], "101": [2, 1], "102": [1, 0], "103": [3, 2], "104": [2, 1]};
+const DEFAULT_KO = {"73": [0, 1], "74": [3, 0], "75": [2, 1], "76": [3, 1], "77": [3, 0], "78": [2, 1], "79": [3, 1], "80": [3, 0], "81": [2, 1], "82": [2, 0], "83": [2, 1], "84": [3, 0], "85": [2, 0], "86": [2, 1], "87": [2, 0], "88": [1, 2], "89": [0, 3], "90": [1, 2], "91": [2, 0], "92": [1, 2], "93": [1, 2], "94": [1, 2], "95": [0, 2], "96": [2, 0], "97": [1, 2], "98": [2, 1], "99": [1, 2], "100": [2, 0], "101": [2, 1], "102": [1, 0], "103": [3, 2], "104": [2, 1]};
 
 // ============= STATE =============
 const state = {
@@ -1096,115 +1139,89 @@ function renderGroups() {
 }
 
 function renderKO(round) {
-  const container = document.getElementById('tab-' + (round === 'R32' ? 'r32' : round === 'R16' ? 'r16' : round === 'QF' ? 'cuartos' : round === 'SF' ? 'semis' : 'final'));
-  const matches = KO.filter(k => round === 'final' ? (k.r === 'FINAL' || k.r === '3RD') : k.r === round);
+  const containerId = round === 'R32' ? 'r32' : round === 'R16' ? 'r16' : round === 'QF' ? 'cuartos' : round === 'SF' ? 'semis' : 'final';
+  const container = document.getElementById('tab-' + containerId);
 
-  let html = `<div class="round-header">
-    <h2>${
-      round === 'R32' ? 'DIECISEISAVOS' :
-      round === 'R16' ? 'OCTAVOS' :
-      round === 'QF' ? 'CUARTOS DE FINAL' :
-      round === 'SF' ? 'SEMIFINALES' :
-      'FINAL · TERCER PUESTO'
-    }</h2>
-    <div class="meta">${matches.length} ${matches.length === 1 ? 'partido' : 'partidos'}</div>
-  </div>`;
+  let html = '';
 
-  matches.forEach(m => {
-    if (m.r === 'FINAL' || m.r === '3RD') return; // Both rendered specially below
-
-    const homeCode = resolveSide(m.h, m.id);
-    const awayCode = resolveSide(m.a, m.id);
-    const homeLabel = homeCode ? `${TEAMS[homeCode].f} ${homeCode}` : sideLabel(m.h);
-    const awayLabel = awayCode ? `${TEAMS[awayCode].f} ${awayCode}` : sideLabel(m.a);
-
-    const score = state.ko[m.id] || [null, null];
-    const canScore = homeCode && awayCode;
-    const hWin = score[0] != null && score[1] != null && score[0] > score[1];
-    const aWin = score[0] != null && score[1] != null && score[0] < score[1];
-
-    html += `<div class="ko-match ${m.ecu ? 'ecu' : ''}">`;
-    html += `<div class="ko-match-header">`;
-    html += `<span><span class="id">M${m.id}</span> ${m.d.toUpperCase()} · ${m.t.toUpperCase()} ET</span>`;
-    html += `<span>📍 ${m.v}</span>`;
-    html += `</div>`;
-
-    html += `<div class="ko-pairing">`;
-    html += `<div class="ko-side ${hWin ? 'winner' : ''}">${homeCode ? `<span class="team-code">${homeLabel}</span>` : `<span class="slot-label">${homeLabel}</span>`}<span class="winner-indicator"></span></div>`;
-    html += `<div class="ko-scores">`;
-    html += `<input type="number" min="0" max="20" class="score-input ${score[0]!=null?'filled':''}" data-ko="${m.id}" data-side="h" value="${score[0]!=null?score[0]:''}" ${!canScore?'disabled':''} inputmode="numeric">`;
-    html += `<span class="vs">-</span>`;
-    html += `<input type="number" min="0" max="20" class="score-input ${score[1]!=null?'filled':''}" data-ko="${m.id}" data-side="a" value="${score[1]!=null?score[1]:''}" ${!canScore?'disabled':''} inputmode="numeric">`;
-    html += `</div>`;
-    html += `<div class="ko-side away ${aWin ? 'winner' : ''}"><span class="winner-indicator" style="border-left:none;border-right:6px solid var(--gold);"></span>${awayCode ? `<span class="team-code">${awayLabel}</span>` : `<span class="slot-label">${awayLabel}</span>`}</div>`;
-    html += `</div>`;
-    html += `</div>`;
-  });
-
-  // For final tab, render Final and 3rd place
   if (round === 'final') {
-    const finalMatch = KO.find(k => k.id === 104);
+    // Two separate cards: 3rd place + Final
     const thirdMatch = KO.find(k => k.id === 103);
+    const finalMatch = KO.find(k => k.id === 104);
 
-    // 3rd place
-    [thirdMatch].forEach(m => {
-      const homeCode = resolveSide(m.h, m.id);
-      const awayCode = resolveSide(m.a, m.id);
-      const homeLabel = homeCode ? `${TEAMS[homeCode].f} ${homeCode}` : sideLabel(m.h);
-      const awayLabel = awayCode ? `${TEAMS[awayCode].f} ${awayCode}` : sideLabel(m.a);
-      const score = state.ko[m.id] || [null, null];
-      const canScore = homeCode && awayCode;
-      const hWin = score[0] != null && score[1] != null && score[0] > score[1];
-      const aWin = score[0] != null && score[1] != null && score[0] < score[1];
+    html += renderRoundCard('3°', 'TERCER PUESTO', 'Sáb 18 jul · Miami', [thirdMatch], false);
+    html += renderRoundCard('🏆', 'FINAL', 'Dom 19 jul · 3 PM · MetLife NJ', [finalMatch], true);
 
-      html += `<div class="ko-match">`;
-      html += `<div class="ko-match-header"><span><span class="id">M103</span> TERCER PUESTO · ${m.d.toUpperCase()}</span><span>📍 ${m.v}</span></div>`;
-      html += `<div class="ko-pairing">`;
-      html += `<div class="ko-side ${hWin?'winner':''}">${homeCode?`<span class="team-code">${homeLabel}</span>`:`<span class="slot-label">${homeLabel}</span>`}</div>`;
-      html += `<div class="ko-scores">`;
-      html += `<input type="number" min="0" max="20" class="score-input ${score[0]!=null?'filled':''}" data-ko="${m.id}" data-side="h" value="${score[0]!=null?score[0]:''}" ${!canScore?'disabled':''} inputmode="numeric">`;
-      html += `<span class="vs">-</span>`;
-      html += `<input type="number" min="0" max="20" class="score-input ${score[1]!=null?'filled':''}" data-ko="${m.id}" data-side="a" value="${score[1]!=null?score[1]:''}" ${!canScore?'disabled':''} inputmode="numeric">`;
-      html += `</div>`;
-      html += `<div class="ko-side away ${aWin?'winner':''}">${awayCode?`<span class="team-code">${awayLabel}</span>`:`<span class="slot-label">${awayLabel}</span>`}</div>`;
-      html += `</div>`;
-      html += `</div>`;
-    });
-
-    // FINAL
+    // Champion banner
+    const score = state.ko[104] || [null, null];
     const homeCode = resolveSide(finalMatch.h, finalMatch.id);
     const awayCode = resolveSide(finalMatch.a, finalMatch.id);
-    const homeLabel = homeCode ? `${TEAMS[homeCode].f} ${homeCode}` : sideLabel(finalMatch.h);
-    const awayLabel = awayCode ? `${TEAMS[awayCode].f} ${awayCode}` : sideLabel(finalMatch.a);
-    const score = state.ko[104] || [null, null];
-    const canScore = homeCode && awayCode;
     const hWin = score[0] != null && score[1] != null && score[0] > score[1];
     const aWin = score[0] != null && score[1] != null && score[0] < score[1];
-    const champion = canScore && (hWin || aWin) ? (hWin ? homeCode : awayCode) : null;
-
-    html += `<div class="final-card">`;
-    html += `<h2>🏆 FINAL 🏆</h2>`;
-    html += `<div class="when">Dom 19 jul · 3:00 PM · MetLife NJ · Match 104</div>`;
-    html += `<div class="ko-pairing">`;
-    html += `<div class="ko-side ${hWin?'winner':''}">${homeCode?`<span class="team-code" style="font-size:18px">${homeLabel}</span>`:`<span class="slot-label">${homeLabel}</span>`}</div>`;
-    html += `<div class="ko-scores">`;
-    html += `<input type="number" min="0" max="20" class="score-input ${score[0]!=null?'filled':''}" data-ko="104" data-side="h" value="${score[0]!=null?score[0]:''}" ${!canScore?'disabled':''} inputmode="numeric" style="width:38px;height:38px;font-size:18px">`;
-    html += `<span class="vs">-</span>`;
-    html += `<input type="number" min="0" max="20" class="score-input ${score[1]!=null?'filled':''}" data-ko="104" data-side="a" value="${score[1]!=null?score[1]:''}" ${!canScore?'disabled':''} inputmode="numeric" style="width:38px;height:38px;font-size:18px">`;
-    html += `</div>`;
-    html += `<div class="ko-side away ${aWin?'winner':''}">${awayCode?`<span class="team-code" style="font-size:18px">${awayLabel}</span>`:`<span class="slot-label">${awayLabel}</span>`}</div>`;
-    html += `</div>`;
+    const champion = (hWin || aWin) ? (hWin ? homeCode : awayCode) : null;
     if (champion) {
-      html += `<div class="champion-banner shown">🏆 CAMPEÓN: ${TEAMS[champion].f} ${TEAMS[champion].n.toUpperCase()} 🏆</div>`;
-    } else {
-      html += `<div class="champion-banner">CAMPEÓN: —</div>`;
+      html += `<div class="champion-standalone">🏆 CAMPEÓN: ${TEAMS[champion].f} ${TEAMS[champion].n.toUpperCase()} 🏆</div>`;
     }
-    html += `</div>`;
+  } else {
+    const matches = KO.filter(k => k.r === round);
+    const config = {
+      R32: { tag: 'R32', title: 'DIECISEISAVOS', meta: '16 partidos · 28 jun — 3 jul' },
+      R16: { tag: 'R16', title: 'OCTAVOS', meta: '8 partidos · 4 — 7 jul' },
+      QF: { tag: 'QF', title: 'CUARTOS DE FINAL', meta: '4 partidos · 9 — 11 jul' },
+      SF: { tag: 'SF', title: 'SEMIFINALES', meta: '2 partidos · 14 — 15 jul' },
+    };
+    const c = config[round];
+    html += renderRoundCard(c.tag, c.title, c.meta, matches, false);
   }
 
   container.innerHTML = html;
+  bindKOInputs(container);
+}
 
-  // Bind ko score inputs
+function renderRoundCard(tag, title, meta, matches, isFinal) {
+  let html = `<div class="group-card ${isFinal ? 'final-round' : ''}">`;
+  html += `<div class="group-header">`;
+  html += `<div><span class="group-letter">${tag}</span>${title}</div>`;
+  html += `<div class="teams-list">${meta}</div>`;
+  html += `</div>`;
+  matches.forEach(m => { html += renderKOMatchRow(m); });
+  html += `</div>`;
+  return html;
+}
+
+function renderKOMatchRow(m) {
+  const homeCode = resolveSide(m.h, m.id);
+  const awayCode = resolveSide(m.a, m.id);
+  const score = state.ko[m.id] || [null, null];
+  const canScore = homeCode && awayCode;
+  const hWin = score[0] != null && score[1] != null && score[0] > score[1];
+  const aWin = score[0] != null && score[1] != null && score[0] < score[1];
+
+  const homeContent = homeCode
+    ? `<span class="team-code">${TEAMS[homeCode].f} ${homeCode}</span>`
+    : `<span class="slot-label">${sideLabel(m.h)}</span>`;
+  const awayContent = awayCode
+    ? `<span class="team-code">${awayCode} ${TEAMS[awayCode].f}</span>`
+    : `<span class="slot-label">${sideLabel(m.a)}</span>`;
+
+  const dayNum = m.d.split(' ')[0];
+
+  return `<div class="match ${m.ecu ? 'ecu' : ''}">
+    <div class="date-time"><div class="date">${dayNum}</div><div class="time">${m.t}</div></div>
+    <div class="teams">
+      <div class="team ${hWin ? 'winner' : ''}">${homeContent}</div>
+      <div class="ko-scores">
+        <input type="number" min="0" max="20" class="score-input ${score[0]!=null?'filled':''}" data-ko="${m.id}" data-side="h" value="${score[0]!=null?score[0]:''}" ${!canScore?'disabled':''} inputmode="numeric">
+        <span class="vs">-</span>
+        <input type="number" min="0" max="20" class="score-input ${score[1]!=null?'filled':''}" data-ko="${m.id}" data-side="a" value="${score[1]!=null?score[1]:''}" ${!canScore?'disabled':''} inputmode="numeric">
+      </div>
+      <div class="team away ${aWin ? 'winner' : ''}">${awayContent}</div>
+    </div>
+    <div class="venue">${m.v}</div>
+  </div>`;
+}
+
+function bindKOInputs(container) {
   container.querySelectorAll('.score-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const koId = parseInt(e.target.dataset.ko);
@@ -1215,7 +1232,6 @@ function renderKO(round) {
       e.target.classList.toggle('filled', val !== null);
       updateProgress();
       debouncedSave();
-      // Re-render all KO tabs since winners cascade
       renderAllKO();
     });
   });
