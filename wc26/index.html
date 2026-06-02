@@ -1111,7 +1111,7 @@ function renderKO(round) {
   </div>`;
 
   matches.forEach(m => {
-    if (m.r === 'FINAL') return; // Special render below
+    if (m.r === 'FINAL' || m.r === '3RD') return; // Both rendered specially below
 
     const homeCode = resolveSide(m.h, m.id);
     const awayCode = resolveSide(m.a, m.id);
@@ -1247,8 +1247,9 @@ function updateProgress() {
 
 // ============= TABS =============
 document.getElementById('tabs').addEventListener('click', (e) => {
-  if (!e.target.matches('.tab-btn')) return;
-  const tab = e.target.dataset.tab;
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
   if (tab === 'r32' || tab === 'r16' || tab === 'cuartos' || tab === 'semis' || tab === 'final') {
